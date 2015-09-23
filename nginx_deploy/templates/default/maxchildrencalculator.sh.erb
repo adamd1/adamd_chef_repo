@@ -1,0 +1,2 @@
+#!/bin/bash
+grep MemTotal /proc/meminfo | awk '{printf "%0.f", ($2*0.75)*0.01/70}' > /tmp/maxchildren_file

@@ -1,0 +1,71 @@
+user <%= node['corus_nginx']['user'] %>;
+worker_processes  <%= @processornum %>;
+
+#access_log  <%= node['corus_nginx']['log_dir'] %>/access.log;
+error_log  <%= node['corus_nginx']['log_dir'] %>/error.log notice;
+pid        /var/run/nginx.pid;
+
+# Needs to be higher than worker_proccesses * worker_connections
+    worker_rlimit_nofile 11000;
+
+
+events {
+    worker_connections  <%= node['corus_nginx']['worker_connections'] %>;  #adjust based on new server.
+    multi_accept on;
+    use epoll;
+}
+
+http {
+  include       <%= node['corus_nginx']['dir'] %>/mime.types;
+      default_type  application/octet-stream;
+
+  sendfile on;
+
+  set_real_ip_from 0.0.0.0/0;
+      real_ip_header X-Forwarded-For;
+
+  server_tokens off; 
+  tcp_nopush on;
+  tcp_nodelay on;
+  rewrite_log on;
+
+  log_format   main '$remote_addr $remote_user [$time_local] $status "$request" $body_bytes_sent "$http_referer" "$http_user_agent" "$http_x_forwarded_for"';
+
+  fastcgi_buffers 8 128k;
+  fastcgi_buffer_size 128k;
+  fastcgi_connect_timeout 30;
+  fastcgi_read_timeout 30s; 
+  fastcgi_send_timeout 30s;
+
+  <% if node['corus_nginx']['keepalive'] == "on" %>
+  keepalive_timeout  <%= node['corus_nginx']['keepalive_timeout'] %>;
+  <% end %>
+  
+  send_timeout     30; #if the client stops responding after this time, close conneciton.  
+
+  reset_timedout_connection on;
+  keepalive_requests 100000; 
+  client_header_timeout 180;
+  client_max_body_size 128m;
+
+  gzip on;
+  gzip_static on;
+  <% if node['corus_nginx']['gzip'] == "on" %>
+    gzip_http_version <%= node['corus_nginx']['gzip_http_version'] %>;
+    gzip_proxied any;
+    gzip_types <%= node['corus_nginx']['gzip_types'].join(' ') %>;
+    gzip_vary <%= node['corus_nginx']['gzip_vary'] %>;
+    gzip_disable "<%= node['corus_nginx']['gzip_disable'] %>";
+    gzip_comp_level <%= node['corus_nginx']['gzip_comp_level'] %>;
+    gzip_disable "msie6";
+  <% end %>
+
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Options nosniff;
+
+    server_names_hash_bucket_size <%= node['corus_nginx']['server_names_hash_bucket_size'] %>;
+
+    include <%= node['corus_nginx']['dir'] %>/conf.d/*.conf;
+    include <%= node['corus_nginx']['dir'] %>/sites-enabled/*;
+    include <%= node['corus_nginx']['dir'] %>/blacklist.conf;
+}

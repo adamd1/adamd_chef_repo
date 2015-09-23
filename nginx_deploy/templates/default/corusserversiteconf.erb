@@ -1,0 +1,58 @@
+server {
+        listen 80 default_server;
+        client_max_body_size    50m;
+        server_name _;
+        root /data/www/<%= @hostname %>;
+        index test.php;
+
+########### PHP ##########
+
+        #Try to server a file before sending it to Drupal
+        location / {
+                try_files $uri $uri/ @drupal;
+        }
+
+        location ~ \.php$ {
+                fastcgi_split_path_info ^(.+\.php)(/.+)$;
+                        #NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
+                include /etc/nginx/fastcgi_params;
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME   $document_root$fastcgi_script_name;
+                fastcgi_param  REQUEST_URI      $request_uri;
+                fastcgi_param  QUERY_STRING     $query_string;
+                fastcgi_param  REQUEST_METHOD   $request_method;
+                fastcgi_param  CONTENT_TYPE     $content_type;
+                fastcgi_param  CONTENT_LENGTH   $content_length;
+                fastcgi_pass 127.0.0.1:9000;
+                #fastcgi_intercept_errors on;
+        }
+
+      
+########### Images ##########
+
+     
+
+########### Security measures ##########
+
+        ## .htaccess. Disable access to any code files. Return a 404 to curtail
+        ## information disclosure. Hide also the text files.
+        location ~* ^(?:.+\.(?:htaccess|make|txt|engine|inc|info|install|module|profile|po|pot|sh|.*sql|theme|tpl(?:\.php)?|xtmpl)|code-style\.pl|/Entries.*|/Repository|/Root|/Tag|/Template|\.aspx|\.asp)$ {
+            return 404;
+        }
+
+        location ^~ /.svn {
+                return 404;
+        }
+
+        ## See the blacklist.conf file at the parent dir: /etc/nginx.
+        ## Deny access based on the User-Agent header.
+        if ($bad_bot) {
+                return 404;
+        }
+
+        ## Deny access based on the Referer header.
+        if ($bad_referer) {
+                return 404;
+        }
+#####################
+}
