@@ -12,4 +12,5 @@ This is specifically to be used in an Amazon AWS / OpsWorks environment.
 
 License and Authors
 -------------------
-Authors: TODO: List authors
+Authors: Adam Drake (adam@brainrub.com)
+Adapted from a similiar recipe created by Aidan Holsgrove (aholsgrove@googlemail.com)
